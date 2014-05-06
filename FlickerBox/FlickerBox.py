@@ -6,11 +6,22 @@ from Event import Event
 from SimpleWebSocketServer import WebSocket, SimpleWebSocketServer
 from websocketclient import create_connection
 
+def getConnectionString():
+    try:
+		temp = __import__("ServiceRetriever", globals(), locals(), ['getServiceByName'], -1)		
+		result = temp.getServiceByName('FastFlicker')
+		print 'using dynamic connection retriever :'+result
+		return result
+    except ImportError:
+		# here value by default if you have no dynamic package.		
+		print 'using static config'
+		return '109.149.24.228:8099'
+		
 argc = len(sys.argv)
 
-global_subject = sys.argv[1] if argc > 1 else "a" 
-global_port = int(sys.argv[2]) if argc > 2 else 8098
-global_QuickTextConnString = "ws://localhost:8099/"
+global_subject = sys.argv[1] if argc > 1 else "test" 
+global_port = int(sys.argv[2]) if argc > 2 else 8099
+#global_QuickTextConnString = "ws://"+getConnectionString()+"/"
 
 
 #Todo :
@@ -21,7 +32,7 @@ class FlickerBox(object):
 	def __init__(self):
 		self.port = global_port
 		self.subject = global_subject
-		self.QuickTextConnString = global_QuickTextConnString
+		self.QuickTextConnString = "ws://"+getConnectionString()+"/"#global_QuickTextConnString
 
 	def __startClient__(self):
 		print "starting client"
