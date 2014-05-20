@@ -32,7 +32,6 @@ class FastFlicker(WebSocket):
 		for client, subject in FastFlicker.clientsAndChannels.iteritems():
 			if subject == self.subject and client != self:
 				client.sendMessage(msg)
-		#self.sendMessage(str(self.data))
 		
 	def handleConnected(self):
 		print self.address, 'connected'

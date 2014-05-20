@@ -3,6 +3,7 @@ import sys
 import time
 import websocketclient
 from Event import Event
+from Messages import Message
 from SimpleWebSocketServer import WebSocket, SimpleWebSocketServer
 from websocketclient import create_connection
 
@@ -19,7 +20,7 @@ def getConnectionString():
 		
 argc = len(sys.argv)
 
-global_subject = sys.argv[1] if argc > 1 else "test" 
+global_subject = sys.argv[1] if argc > 1 else "test"
 global_port = int(sys.argv[2]) if argc > 2 else 8099
 #global_QuickTextConnString = "ws://"+getConnectionString()+"/"
 
@@ -54,15 +55,15 @@ class FlickerBox(object):
 		except Exception,e:
 			print str(e)
 		
-	def __onMessageToServer__(self, subject, msg):		
-		print "Received from client to forward :", subject, msg
-		self.client.send(subject, msg)
+	def __onMessageToServer__(self, msg):
+		print "Received from client to forward :", msg
+		self.client.send(msg)
 				
 	def start(self):
 		self.__startClient__()
 		self.__startServer__()
 		
-	
+#NotifBoxClient is the part connected to the FastFlicker
 class NotifBoxClient(object):
 
 	def __init__(self, QuickTextConnString,subject):
@@ -87,11 +88,11 @@ class NotifBoxClient(object):
 		print "on_server_open... listening to ", self.subject
 		self.textBoxServer.send(self.subject)
 		
-	def send(self, subject, msg):
-		print "Sending message ", msg, " to ", subject
+	def send(self, msg):
+		print "Sending message ", str(msg)
 		ws = create_connection(self.QuickTextConnString);
-		ws.send(subject)
-		ws.send(msg)
+		ws.send(msg.to)
+		ws.send(msg.getJson())
 		ws.close()
 		
 	def start(self):
@@ -106,10 +107,11 @@ class NotifBoxClient(object):
 		thread.start_new_thread(self.textBoxServer.run_forever, ())
 		print "### After thread ###"	
 
+#NotifBoxClient is the part connected to the end user (html5?)
 class NotifBoxServer(WebSocket):
 	#We should have only one instance.
 	#If several, it is not a problem not to know where it come from.
-	allEvents = Event()
+	newMsgToSendEvent = Event()
 	instance = None
 	messageToSend = []
 	
@@ -120,32 +122,44 @@ class NotifBoxServer(WebSocket):
 	
 	@staticmethod
 	def subscribeOnMessage(listener):
-		NotifBoxServer.allEvents.append(listener)
+		NotifBoxServer.newMsgToSendEvent.append(listener)
 		
 	#client interaction
-	#When a client is connected he can send messages like "John@Hello"
+	#When a client is connected he can send messages.
+	#See Messages for format and parsing.
 	def handleMessage(self):
 		if self.data is None:
-			self.data = ''		
+			self.data = ''
+		jsonMessage = str(self.data)
 		try:
-			input = str(self.data)
-			subject = input.split('@', 1)[0];
-			msg = input.split('@', 1)[1];
-			self.sendNewMessage(subject,global_subject+' : '+msg)
+			msg = Message(jsonMessage)
+			msg.sender = global_subject
+			msg.setCreationTime()
+			
+			if msg.to != "":
+				self.sendNewMessage(msg)
+			else :
+				print "Error, no recipient null for " , jsonMessage
 		except Exception,e:
+			print "Error in handling new message to send : ", jsonMessage
 			print str(e)			
 
-	def sendNewMessage(self, subject, msg):
-		print self.address, 'about to send a new message : ', msg, ' to ', subject
-		NotifBoxServer.allEvents(subject, msg)	
+	def sendNewMessage(self, msg):
+		print self.address, 'about to send a new message : ', msg, ' to ', msg.to
+		NotifBoxServer.newMsgToSendEvent(msg)
 	
 	@staticmethod
 	def messageReceived(msg):
-		print 'received a new message : ', msg
-		if NotifBoxServer.instance is not None and NotifBoxServer.instance.connected :
-			NotifBoxServer.instance.sendMessage(msg)
-		else :
-			NotifBoxServer.messageToSend.append(msg)
+		print 'Received a new message from FastFlicker: ', msg
+		#Todo : test if it is a new message and not a notification...
+		try :
+			#msg = Message(jsonMsg)
+			if NotifBoxServer.instance is not None and NotifBoxServer.instance.connected :
+				NotifBoxServer.instance.sendMessage(msg)
+			else :
+				NotifBoxServer.messageToSend.append(msg)
+		except Exception,e:
+			print str(e)
 		
 	def handleConnected(self):
 		print self.address, 'connected'
