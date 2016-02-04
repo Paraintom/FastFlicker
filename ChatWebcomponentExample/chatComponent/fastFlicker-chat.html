@@ -1,0 +1,222 @@
+<!-- Example :
+<fastFlicker-chat id="test" header="Welcome on my Chat!" url="localhost:8099" subject="MikMak_MainRoom"></fastFlicker-chat>-->
+
+<!-- Imports polymer -->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<!-- Imports fastFlicker -->
+<script language="JavaScript" type="text/javascript" src="./LiteEvent.js"></script>
+<script language="JavaScript" type="text/javascript" src="./FastFlickerClient.js"></script>
+
+<!-- Defines element markup -->
+<dom-module id="fastFlicker-chat">
+    <template>
+        <style>
+
+
+            flicker-chat{
+                font-family: Arial;
+            }
+
+            chat-body{
+                width:90%;
+                background-color:#efefef;
+                padding: 1% 5%;
+                display: inline-block;
+            }
+
+            chat-footer {
+                width:100%;
+            }
+
+            chat-footer button{
+                background-color: #b175ac;
+            }
+
+            chat-footer .wrapper{
+                padding:10px 5%;
+                box-sizing:border-box;
+                -moz-box-sizing:border-box;
+                -webkit-box-sizing:border-box;
+            }
+
+            chat-footer input{
+                width:70%;
+            }
+
+            chat-footer button {
+                background-color: #462343;
+                -moz-border-radius:6px;
+                -webkit-border-radius:6px;
+                border-radius:6px;
+                border:1px solid #7f3b7c;
+                display:inline-block;
+                cursor:pointer;
+                color:#ffffff;
+                font-family:arial;
+                font-size:12px;
+                padding:5px 8px;
+                text-decoration:none;
+            }
+            chat-footer button:hover {
+                background-color: #7f3b7c;
+            }
+            chat-footer button:active {
+                background-color: #462343;
+            }
+
+            chat-header{
+                width:100%;
+                background-color: #462343;
+                display: inline-block;
+                padding:5px;
+                box-sizing:border-box;
+                -moz-box-sizing:border-box;
+                -webkit-box-sizing:border-box;
+                color:#ffffff;
+            }
+
+            chat-bubble
+            {
+                position: relative;
+                display: inline-block;
+                width: 80%;
+                min-height: 25px;
+                padding: 5px;
+                background: white;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+                border-radius: 10px;
+                margin-left:20px;
+                margin-top:10px;
+                color:#ffffff;
+                font-size:14px;
+                color : black;
+            }
+
+            bubble-header{
+                width: 100%;
+                display: inline-block;
+                font-size: 17px;
+
+            }
+
+            chat-bubble.sent{
+                margin-right:10px;
+                margin-left:10px;
+            }
+
+            chat-bubble:after
+            {
+                content: '';
+                position: absolute;
+                border-style: solid;
+                border-color: transparent white;
+                display: block;
+                width: 0;
+                z-index: 1;
+                top: 17px;
+            }
+
+            chat-bubble.sent:after
+            {
+                border-width: 5px 5px 5px 0;
+                left: -5px;
+            }
+
+
+            chat-bubble.received:after
+            {
+                border-width: 5px 0 5px 5px;
+                right: -5px;
+            }
+        </style>
+		<flicker-chat>
+		  <chat-header>
+			 <chat-h-name>{{header}}</chat-h-name>
+		  </chat-header>
+		  <chat-body>
+              <template is="dom-repeat" items="{{messages}}">
+                  <chat-bubble class$="{{item.class}}">{{item.value}}</chat-bubble>
+              </template>
+		  </chat-body>
+		  <chat-footer>
+			 <div class="wrapper">
+                 <form action="" onsubmit="return false" autocomplete="off" >
+                     <input id="toSend" type="" class="send_inp" />
+                     <button class="send" on-click="doSend">Send</button>
+                 </form>
+			 </div>
+		  </chat-footer>
+		</flicker-chat>
+
+	</template>
+    
+    <!-- Registers custom element -->
+    <script>
+    Polymer({
+        is: 'fastFlicker-chat',
+
+        properties: {
+            url: String,
+            subject: String,
+            header: {
+                type: String,
+                value: 'FastFlicker Chat'
+            },
+        },
+        publish: {
+            header: {value: false, reflect: true}
+        },
+        // Fires when an instance of the element is created
+        created: function() { },
+    
+        // Fires when the local DOM has been fully prepared
+        ready: function() {
+            this.messages = [];
+            var url = this.url;
+            var subject = this.subject;
+            console.log("component ready, fastFlicker url ="+url+" subject="+subject);
+            //this.header = this.header;
+
+            var currentComponent = this;
+
+            this.fastFlicker = new FastFlickerClient(url, subject);
+            this.fastFlicker.onMessage().subscribe(function (a) {
+                currentComponent.push('messages', {class : "received", value : a});
+            });
+            this.fastFlicker.onError().subscribe(function (a) {
+                currentComponent.header = "Error, see console logs";
+            });
+            this.fastFlicker.onReady().subscribe(function () {
+                console.log("fastFlicker ready");
+                currentComponent.messages = [];
+                currentComponent.push('messages', {class : "", value : "chat initialized"});
+            });
+
+            this.fastFlicker.open();
+        },
+    
+        // Fires when the element was inserted into the document
+        attached: function() {},
+    
+        // Fires when the element was removed from the document
+        detached: function() {},
+    
+        // Fires when an attribute was added, removed, or updated
+        attributeChanged: function(name, type) {
+            console.log("yes");
+            //this.header = this.header;
+        },
+
+        doSend: function() {
+            var message = this.$.toSend.value;
+            if(message != "") {
+                this.push('messages', {class: "sent", value: message});
+                //event.preventDefault();
+                this.fastFlicker.send(message);
+            }
+        }
+    });
+    </script>
+</dom-module>

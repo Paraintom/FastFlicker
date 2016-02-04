@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset='utf-8'>
+
+    <!-- Imports polyfill -->
+    <script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+
+    <!-- Imports custom element -->
+    <link rel="import" href="fastFlicker-chat.html">
+	<style>
+        .box{
+            position:fixed;
+            bottom:0px;
+            right:10px;
+            width:320px;
+            border-left:1px solid #000000;
+            border-right:1px solid #000000;
+        }
+    </style>
+</head>
+   <body>
+    <div class="box">
+        <fastFlicker-chat id="test" header="Welcome on my Chat!" url="ws://localhost:8099/" subject="MikMak_MainRoom"></fastFlicker-chat>
+    </div>
+   </body>
+
+<script>
+   foo = function(){
+      document.getElementById("test").header = "Another one?";
+   }
+   setTimeout("foo()", 2000);
+</script>
+</html>
