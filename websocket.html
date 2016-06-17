@@ -6,11 +6,22 @@
 
 <script language="javascript" type="text/javascript">
 
-
+  function parseFromParams(key, defaultValue) {
+	var result = defaultValue,tmp = [];
+	location.search.substr(1)
+		.split("&")
+		.forEach(function (item) {
+			tmp = item.split("=");
+			if (tmp[0] === key) 
+			result = decodeURIComponent(tmp[1]);
+		});
+	return result;
+  }
   function init()
   {
-	document.myform.url.value = "ws://localhost:8099/"
-	document.myform.inputtext.value = "Hello World!"
+    var url = parseFromParams("url","ws://localhost:8099/");
+	document.myform.url.value = url;
+	document.myform.inputtext.value = "Hello World!";
 	document.myform.disconnectButton.disabled = true;
   }
 
